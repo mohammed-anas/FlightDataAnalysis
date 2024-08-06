@@ -46,6 +46,6 @@ Before running the project, ensure you have the following installed on your syst
    git clone https://github.com/mohammed-anas/FlightDataAnalysis.git
 
 2. **Import as scala project in IDE**
-3. ** Run com.flight.analytics.Main class**
+3. **Run com.flight.analytics.Main class**
 
 
