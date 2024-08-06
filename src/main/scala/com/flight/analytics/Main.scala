@@ -36,9 +36,14 @@ object Main {
       "output/FlownTogetherMoreThanNFlights"
     )(spark)
 
-    DataProcessor.longestFlightHopWithoutUK(flightDs)(spark).show()
     CSVWriter.writeToCSV(
       DataProcessor.longestFlightHopWithoutUK(flightDs)(spark),
+      "output/LongestRunByPassenger.csv"
+    )(spark)
+
+
+    CSVWriter.writeToCSV(
+     DataProcessor.flownTogetherMoreThanNFlights(flightDs, 20, "2017-01-01", "2017-12-31")(spark),
       "output/LongestRunByPassenger.csv"
     )(spark)
 

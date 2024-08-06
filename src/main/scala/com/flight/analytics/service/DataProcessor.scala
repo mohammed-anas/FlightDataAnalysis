@@ -1,11 +1,12 @@
 package com.flight.analytics.service
 
-import com.flight.analytics.models.Models.{Flight, FrequentFlyers, MonthlyFlightCount, Passenger, PassengerLongestFlightHop, PassengerPairsFlownTogether}
-import org.apache.spark.sql.functions.{lit}
+import com.flight.analytics.models.Models.{Flight, FrequentFlyers, MonthlyFlightCount, Passenger, PassengerLongestFlightHop, PassengerPairsFlownTogether, PassengerPairsFlownTogetherInDateRange}
+import org.apache.spark.sql.functions.asc
 import org.apache.spark.sql.{Dataset, SparkSession}
 
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
+
 
 object DataProcessor {
   /**
@@ -180,9 +181,10 @@ object DataProcessor {
    */
   def getDateRangeFlights(flightDS: Dataset[Flight], fromDate: String, toDate: String) (implicit spark: SparkSession)
   : Dataset[Flight] = {
-    import spark.implicits._
 
-    flightDS.filter($"date" >= lit(fromDate) && $"date" <= lit(toDate))
+    flightDS
+      .filter(flight => flight.date >= fromDate && flight.date <= toDate)
+      .orderBy(asc("date"))
   }
 
   /**
@@ -194,19 +196,47 @@ object DataProcessor {
    * @param spark
    * @return
    */
-  def flownTogetherMoreThanNFlights(flightDS: Dataset[Flight], flightCount : Long, fromDate: String, toDate: String)
-                                   (implicit spark: SparkSession)
-  : Dataset[PassengerPairsFlownTogether] = {
+def flownTogetherMoreThanNFlights(flightDS: Dataset[Flight], flightCount: Long, fromDate: String, toDate: String)
+                                 (implicit spark: SparkSession)
+: Dataset[PassengerPairsFlownTogetherInDateRange] = {
 
-    import spark.implicits._
-    val dateRangeFlightsDS:  Dataset[Flight] = getDateRangeFlights(flightDS, fromDate, toDate)
-    val passengerPairs: Dataset[(Long,Long)] = getPassengerPairs(dateRangeFlightsDS)
-    val passengerPairCount: Dataset[(Long, Long, Long)] = getPassengerPairCount(passengerPairs)
+  import spark.implicits._
 
-    passengerPairCount.filter(_._3 >= flightCount).orderBy($"_3".desc).map{
-      case (p1,p2,count) => PassengerPairsFlownTogether(p1,p2,count)
+
+  // Filter flights by date range
+  val dateRangeFlightsDS: Dataset[Flight] = getDateRangeFlights(flightDS, fromDate, toDate)
+
+  // Generate passenger pairs for each flight
+  val passengerPair: Dataset[(Long, Long, String)] = dateRangeFlightsDS
+    .groupByKey(_.flightId)
+    .flatMapGroups { case (_, flights) =>
+      val flightList = flights.toList
+      val passengerIds = flightList.map(_.passengerId).distinct
+      for {
+        i <- passengerIds.indices
+        j <- i + 1 until passengerIds.length
+      } yield (passengerIds(i), passengerIds(j), flightList.head.date)
     }
-  }
+
+  // Aggregate pairs to count occurrences and find earliest/latest dates
+  val aggregatedPairs: Dataset[(Long, Long, Long, String, String)] = passengerPair
+    .groupByKey { case (p1, p2, _) => (p1, p2) }
+    .mapGroups { case ((p1, p2), iter) =>
+      val list = iter.toList
+      val count = list.length.toLong
+      val fromDate = list.map(_._3).min
+      val toDate = list.map(_._3).max
+      (p1, p2, count, fromDate, toDate)
+    }
+
+  // Filter and map the result
+  aggregatedPairs
+    .filter(_._3 >= flightCount)
+    .orderBy($"_3".desc)
+    .map { case (p1, p2, count, fromDate, toDate) =>
+      PassengerPairsFlownTogetherInDateRange(p1, p2, count, fromDate, toDate)
+    }
+}
 
   /**
    * Group all flights for a given passenger sorted by asc order
@@ -233,7 +263,7 @@ object DataProcessor {
     var maxHopLength = 0;
     var currentHopLength = 0;
     flightList.foreach{ flight =>
-      if(flight.from != "UK" && flight.to != "UK"){
+      if(flight.from != "uk" && flight.to != "uk"){
         currentHopLength += 1
         maxHopLength = Math.max(maxHopLength, currentHopLength)
       }else {
