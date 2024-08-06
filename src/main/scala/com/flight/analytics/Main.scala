@@ -25,6 +25,7 @@ object Main {
       "output/FlightCountEachMonth"
     )(spark)
 
+
     CSVWriter.writeToCSV(
       DataProcessor.getFrequentFlyers(flightDs, passengerDs, 100)(spark),
       "output/FrequentFlyers"

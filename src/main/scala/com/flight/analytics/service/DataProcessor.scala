@@ -19,9 +19,13 @@ object DataProcessor {
   def getFlightCountEachMonth(flightDS: Dataset[Flight])(implicit spark: SparkSession): Dataset[MonthlyFlightCount] = {
     import spark.implicits._
 
+    def cleanDateString(dateStr: String): String = {
+      dateStr.split(" ")(0)
+    }
     def parseDate(dateStr: String): LocalDate = {
-      val dateFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")
-      LocalDate.parse(dateStr, dateFormatter)
+      val cleanedDateStr = cleanDateString(dateStr)
+      val dateFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd")
+      LocalDate.parse(cleanedDateStr, dateFormatter)
     }
 
     // Convert the date string to LocalDate and extract year and month
