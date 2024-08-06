@@ -47,5 +47,7 @@ Before running the project, ensure you have the following installed on your syst
 
 2. **Import as scala project in IDE**
 3. **Run com.flight.analytics.Main class**
+4. **Check generated output**
+   Under src/main/resources/output there will be csv files generated as answers for each questions
 
 
