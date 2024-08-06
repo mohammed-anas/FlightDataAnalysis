@@ -2,8 +2,7 @@
 
 ## Overview
 
-The **FlightDataAnalysis** project analyzes flight data to identify and count passenger pairings based on their travel frequency. Leveraging Apache Spark and Scala, this project processes large datasets to provide insights into passenger travel patterns.
-
+The **FlightDataAnalysis** project analyzes flight data to identify and solve various use cases.
 ## Version Information
 
 - **Java**: 1.8
