@@ -43,4 +43,4 @@ Before running the project, ensure you have the following installed on your syst
    Clone the repository to your local machine using:
 
    ```bash
-   git clone <repository-url>
+   git clone https://github.com/mohammed-anas/FlightDataAnalysis.git
